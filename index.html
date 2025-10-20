@@ -36,7 +36,7 @@ html, body {
 .text-particle {
   position: absolute;
   white-space: nowrap;
-  text-shadow: 0 0 12px rgba(255,255,255,0.8);
+  text-shadow: 0 0 6px rgba(255,255,255,0.45);
   will-change: transform, opacity;
   user-select: none;
   pointer-events: none;
@@ -48,7 +48,7 @@ html, body {
   will-change: transform, opacity;
   user-select: none;
   border-radius: 6px;
-  filter: drop-shadow(0 0 6px #fff);
+  filter: drop-shadow(0 0 4px #fff);
 }
 #rotateNotice {
   position: fixed;
@@ -72,7 +72,6 @@ html, body {
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
 <script>
-
 const rotatingContainer = document.getElementById('rotatingContainer');
 const galaxy = document.getElementById('galaxy');
 const notice = document.getElementById('rotateNotice');
@@ -84,11 +83,13 @@ const imageURL = "1.jpg";
 const activeParticles = new Set();
 const baseArea = 1920 * 1080;
 
-
 let isMobile = window.innerWidth < 768;
-let baseMax = isMobile ? 120 : 250;    
-let spawnPerTick = isMobile ? 3 : 8;  
+let baseMax = isMobile ? 150 : 360;
+let spawnPerTick = isMobile ? 3 : 6;
 let maxParticles = computeMaxParticles();
+
+let columnCount = computeColumnCount();
+let nextColumn = 0;
 
 function computeMaxParticles() {
   const area = window.innerWidth * window.innerHeight;
@@ -98,6 +99,11 @@ function computeMaxParticles() {
   return p;
 }
 
+function computeColumnCount() {
+  const minCol = 6;
+  const approx = Math.max(minCol, Math.floor(window.innerWidth / 140));
+  return approx;
+}
 
 function createTextParticle() {
   if (activeParticles.size >= maxParticles) return;
@@ -105,26 +111,38 @@ function createTextParticle() {
   const isIcon = Math.random() < 0.28;
   el.className = 'text-particle';
   el.textContent = isIcon ? icons[Math.floor(Math.random()*icons.length)] : messages[Math.floor(Math.random()*messages.length)];
-  el.style.fontSize = (isMobile ? 16 : 18) + (Math.random()*18) + 'px';
+  el.style.fontSize = (isMobile ? 14 : 16) + (Math.random()*18) + 'px';
   el.style.color = textColor;
   el.style.opacity = 0;
   rotatingContainer.appendChild(el);
 
   const w = el.offsetWidth || 60;
-  
-  el.style.left = (Math.random() * (window.innerWidth + w) - w/2) + 'px';
 
-  const translateZ = - (50 + Math.random() * (isMobile ? 300 : 800));
-  const startY = -40, endY = window.innerHeight + 40;
-  const duration = 6500 + Math.random() * 6000;
+  if (columnCount <= 1) columnCount = computeColumnCount();
+  const colWidth = window.innerWidth / columnCount;
+  const jitter = Math.max(0, colWidth - w);
+  const leftBase = colWidth * nextColumn + (Math.random() * jitter);
+  el.style.left = Math.max(0, Math.min(window.innerWidth - w, leftBase)) + 'px';
+  nextColumn = (nextColumn + 1) % columnCount;
+
+  const translateZ = - (30 + Math.random() * 220);
+  const startY = -120;
+  const endY = window.innerHeight + 120;
+  const duration = 7000 + Math.random() * 7000;
   const t0 = performance.now();
+  const swayAmp = 12 + Math.random() * 10;
+  const swayFreq = 1 + Math.random() * 2;
 
   function anim(t) {
     const dt = t - t0;
     if (dt < duration) {
       const p = dt / duration;
-      el.style.transform = `translateY(${startY + p*(endY-startY)}px) translateZ(${translateZ}px)`;
-      el.style.opacity = p < 0.08 ? p*12 : (p > 0.92 ? (1-p)*12 : 1);
+      const y = startY + p*(endY - startY);
+      const sway = Math.sin(p * Math.PI * 2 * swayFreq) * (1 - Math.abs(0.5 - p))*swayAmp;
+      el.style.transform = `translateY(${y}px) translateX(${sway}px) translateZ(${translateZ}px)`;
+      if (p < 0.08) el.style.opacity = Math.min(0.95, p * 12);
+      else if (p > 0.92) el.style.opacity = Math.max(0, (1-p)*12);
+      else el.style.opacity = 0.9;
       requestAnimationFrame(anim);
     } else {
       el.remove();
@@ -144,19 +162,32 @@ function createImageParticle() {
   rotatingContainer.appendChild(el);
 
   const w = el.offsetWidth || 48;
-  el.style.left = (Math.random() * (window.innerWidth + w) - w/2) + 'px';
 
-  const translateZ = - (80 + Math.random() * (isMobile ? 300 : 800));
-  const startY = -60, endY = window.innerHeight + 60;
-  const duration = 7000 + Math.random() * 6000;
+  if (columnCount <= 1) columnCount = computeColumnCount();
+  const colWidth = window.innerWidth / columnCount;
+  const jitter = Math.max(0, colWidth - w);
+  const leftBase = colWidth * nextColumn + (Math.random() * jitter);
+  el.style.left = Math.max(0, Math.min(window.innerWidth - w, leftBase)) + 'px';
+  nextColumn = (nextColumn + 1) % columnCount;
+
+  const translateZ = - (40 + Math.random() * 200);
+  const startY = -140;
+  const endY = window.innerHeight + 140;
+  const duration = 8000 + Math.random() * 7000;
   const t0 = performance.now();
+  const swayAmp = 18 + Math.random() * 12;
+  const swayFreq = 0.8 + Math.random() * 1.8;
 
   function anim(t) {
     const dt = t - t0;
     if (dt < duration) {
       const p = dt / duration;
-      el.style.transform = `translateY(${startY + p*(endY-startY)}px) translateZ(${translateZ}px)`;
-      el.style.opacity = p < 0.08 ? p*12 : (p > 0.92 ? (1-p)*12 : 1);
+      const y = startY + p*(endY - startY);
+      const sway = Math.cos(p * Math.PI * 2 * swayFreq) * (1 - Math.abs(0.5 - p))*swayAmp;
+      el.style.transform = `translateY(${y}px) translateX(${sway}px) translateZ(${translateZ}px) rotateY(${Math.sin(p*3)*12}deg)`;
+      if (p < 0.08) el.style.opacity = Math.min(0.95, p * 12);
+      else if (p > 0.92) el.style.opacity = Math.max(0, (1-p)*12);
+      else el.style.opacity = 0.9;
       requestAnimationFrame(anim);
     } else {
       el.remove();
@@ -198,7 +229,6 @@ function animateStars(){
 }
 animateStars();
 
-/* audio on first click */
 let audioStarted = false;
 let audioEl = null;
 document.body.addEventListener('click', () => {
@@ -212,22 +242,13 @@ document.body.addEventListener('click', () => {
 let targetX = 0, targetY = 0;
 let currentX = 0, currentY = 0;
 
-/* sensitivities */
-function desktopSens() { return 50; } 
-function mobileSens()  { return 30; } 
-function smoothingFactor() { return isMobile ? 0.12 : 0.18; }
-const wheelZoomFactor = 0.14;
-const pinchZoomFactor = 0.2;
-
-/* mouse move */
 document.addEventListener('mousemove', (e) => {
   const cx = window.innerWidth/2, cy = window.innerHeight/2;
-  const sens = isMobile ? mobileSens() : desktopSens();
+  const sens = isMobile ? 30 : 40;
   targetY = ((e.clientX - cx)/cx) * sens;
-  targetX = (-(e.clientY - cy)/cy) * sens;
+  targetX = (-(e.clientY - cy)/cy) * (sens * 0.8);
 });
 
-/* touch gestures */
 let lastTouchDist = null;
 let touchStartX = 0, touchStartY = 0;
 document.addEventListener('touchstart', (e) => {
@@ -245,7 +266,7 @@ document.addEventListener('touchmove', (e) => {
   if (e.touches.length === 1) {
     const dx = e.touches[0].clientX - touchStartX;
     const dy = e.touches[0].clientY - touchStartY;
-    const factor = isMobile ? 0.08 : 0.04;
+    const factor = isMobile ? 0.06 : 0.03;
     targetY += dx * factor;
     targetX += -dy * factor;
     touchStartX = e.touches[0].clientX;
@@ -255,8 +276,8 @@ document.addEventListener('touchmove', (e) => {
     const dy = e.touches[0].clientY - e.touches[1].clientY;
     const dist = Math.sqrt(dx*dx + dy*dy);
     if (lastTouchDist != null) {
-      zoom += (lastTouchDist - dist) * pinchZoomFactor;
-      zoom = Math.max(50, Math.min(1200, zoom));
+      zoom += (lastTouchDist - dist) * 0.18;
+      zoom = Math.max(70, Math.min(900, zoom));
       camera.position.z = zoom;
     }
     lastTouchDist = dist;
@@ -268,40 +289,35 @@ document.addEventListener('touchend', (e) => {
 }, { passive: true });
 
 document.addEventListener('wheel', (e) => {
-  zoom += e.deltaY * wheelZoomFactor;
-  zoom = Math.max(50, Math.min(1200, zoom));
+  zoom += e.deltaY * 0.12;
+  zoom = Math.max(70, Math.min(900, zoom));
   camera.position.z = zoom;
 }, { passive: true });
 
 function smoothRotate(){
-  const s = smoothingFactor();
+  const s = isMobile ? 0.12 : 0.18;
   currentX += (targetX - currentX) * s;
   currentY += (targetY - currentY) * s;
-
-  currentX = Math.max(-60, Math.min(60, currentX));
-  currentY = Math.max(-90, Math.min(90, currentY));
-  const scale = Math.max(0.3, Math.min(3, zoom / 150));
+  currentX = Math.max(-50, Math.min(50, currentX));
+  currentY = Math.max(-70, Math.min(70, currentY));
+  const scale = Math.max(0.35, Math.min(2.4, zoom / 150));
   rotatingContainer.style.transform = `translate(-50%,-50%) rotateX(${currentX}deg) rotateY(${currentY}deg) scale(${scale})`;
   requestAnimationFrame(smoothRotate);
 }
 smoothRotate();
 
-/* resize handling */
 window.addEventListener('resize', () => {
-  const prevMobile = isMobile;
   isMobile = window.innerWidth < 768;
-  if (isMobile !== prevMobile) {
-    baseMax = isMobile ? 120 : 250;
-    spawnPerTick = isMobile ? 3 : 8;
-  }
+  baseMax = isMobile ? 150 : 360;
+  spawnPerTick = isMobile ? 3 : 6;
   maxParticles = computeMaxParticles();
+  columnCount = computeColumnCount();
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
   checkOrientation();
 });
 
-/* orientation notice */
 function checkOrientation(){
   if (window.innerWidth < window.innerHeight) {
     notice.style.display = "flex";
@@ -315,17 +331,16 @@ function checkOrientation(){
 }
 checkOrientation();
 
-/* spawn loop (controlled) */
 window.addEventListener('DOMContentLoaded', () => {
   setInterval(() => {
     maxParticles = computeMaxParticles();
     const available = Math.max(0, maxParticles - activeParticles.size);
     const createCount = Math.min(spawnPerTick, available);
     for (let i=0;i<createCount;i++){
-      if (Math.random() < 0.75) createTextParticle();
+      if (Math.random() < 0.78) createTextParticle();
       else createImageParticle();
     }
-  }, 300);
+  }, 420);
 });
 </script>
 </body>
