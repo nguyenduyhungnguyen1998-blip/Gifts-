@@ -13,7 +13,7 @@ html, body {
   background: radial-gradient(ellipse at center, #000011 0%, #000000 100%);
   font-family: 'Times New Roman', Times, serif;
   user-select: none;
-  perspective: 1000px;
+  perspective: 1500px;
   cursor: pointer;
 }
 #galaxy {
@@ -31,23 +31,24 @@ html, body {
   transform-style: preserve-3d;
   transform-origin: center center;
   z-index: 2;
-  transform: translate(-50%, -50%) rotateX(0deg) rotateY(0deg);
+  transform: translate(-50%, -50%) rotateX(0deg) rotateY(0deg) scale(1);
 }
 .text-particle {
   position: absolute;
   white-space: nowrap;
-  text-shadow: 0 0 12px rgba(255, 255, 255, 0.8);
+  text-shadow: 0 0 12px rgba(255,255,255,0.8);
   will-change: transform, opacity;
   user-select: none;
+  pointer-events: none;
 }
 .image-particle {
   position: absolute;
   pointer-events: none;
-  max-width: 50px; max-height: 50px;
+  max-width: 60px; max-height: 60px;
   will-change: transform, opacity;
   user-select: none;
-  border-radius: 5px;
-  filter: drop-shadow(0 0 4px #fff);
+  border-radius: 6px;
+  filter: drop-shadow(0 0 6px #fff);
 }
 #rotateNotice {
   position: fixed;
@@ -65,45 +66,65 @@ html, body {
 </style>
 </head>
 <body>
-<div id="rotateNotice">Vui lòng xoay ngang màn hình để bắt đầu 🌙</div>
+<div id="rotateNotice">Vui lòng xoay ngang màn hình để bắt đầu 📱🔄</div>
 <div id="galaxy"></div>
 <div id="rotatingContainer"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
 <script>
+
 const rotatingContainer = document.getElementById('rotatingContainer');
 const galaxy = document.getElementById('galaxy');
 const notice = document.getElementById('rotateNotice');
 
-const messages = ["HAPPY 20/10", "LUÔN vv,hp nha", "Hc giỏi,cute là quý nhất nè", "Gái 10A1 mãi đỉnh"];
+const messages = ["HAPPY 20/10","Luôn vv,hp nha","Hc giỏi,cute là quý nhất nè^^","Gái 10A1 mãi đỉnh","mau ăn chóng lớn nhe<3","mãi là one piece của  a1🥰"];
+const icons = ["❤️","❤","💗","🤗"];
 const textColor = "#ff7487";
 const imageURL = "1.jpg";
-const icons = ["❤️", "❤", "💗"];
-const maxParticles = 150;
 const activeParticles = new Set();
+const baseArea = 1920 * 1080;
+
+
+let isMobile = window.innerWidth < 768;
+let baseMax = isMobile ? 120 : 250;    
+let spawnPerTick = isMobile ? 3 : 8;  
+let maxParticles = computeMaxParticles();
+
+function computeMaxParticles() {
+  const area = window.innerWidth * window.innerHeight;
+  let p = Math.round(baseMax * (area / baseArea));
+  const minAllowed = Math.floor(baseMax * 0.6);
+  p = Math.max(minAllowed, Math.min(p, baseMax));
+  return p;
+}
+
 
 function createTextParticle() {
   if (activeParticles.size >= maxParticles) return;
   const el = document.createElement('div');
-  const isIcon = Math.random() < 0.3;
+  const isIcon = Math.random() < 0.28;
   el.className = 'text-particle';
-  el.textContent = isIcon ? icons[Math.floor(Math.random() * icons.length)] : messages[Math.floor(Math.random() * messages.length)];
-  el.style.fontSize = (isIcon ? 20 : 18) + Math.random() * 10 + 'px';
+  el.textContent = isIcon ? icons[Math.floor(Math.random()*icons.length)] : messages[Math.floor(Math.random()*messages.length)];
+  el.style.fontSize = (isMobile ? 16 : 18) + (Math.random()*18) + 'px';
   el.style.color = textColor;
   el.style.opacity = 0;
   rotatingContainer.appendChild(el);
-  const w = el.offsetWidth || 50;
-  el.style.left = Math.random() * (window.innerWidth - w) + 'px';
-  const translateZ = -Math.random() * 300;
-  const startY = -30, endY = window.innerHeight + 30;
-  const duration = 8000 + Math.random() * 4000;
+
+  const w = el.offsetWidth || 60;
+  
+  el.style.left = (Math.random() * (window.innerWidth + w) - w/2) + 'px';
+
+  const translateZ = - (50 + Math.random() * (isMobile ? 300 : 800));
+  const startY = -40, endY = window.innerHeight + 40;
+  const duration = 6500 + Math.random() * 6000;
   const t0 = performance.now();
+
   function anim(t) {
     const dt = t - t0;
     if (dt < duration) {
       const p = dt / duration;
-      el.style.transform = `translateY(${startY + p * (endY - startY)}px) translateZ(${translateZ}px)`;
-      el.style.opacity = p < 0.1 ? p * 10 : (p > 0.9 ? (1 - p) * 10 : 1);
+      el.style.transform = `translateY(${startY + p*(endY-startY)}px) translateZ(${translateZ}px)`;
+      el.style.opacity = p < 0.08 ? p*12 : (p > 0.92 ? (1-p)*12 : 1);
       requestAnimationFrame(anim);
     } else {
       el.remove();
@@ -121,18 +142,21 @@ function createImageParticle() {
   el.className = 'image-particle';
   el.style.opacity = 0;
   rotatingContainer.appendChild(el);
-  const w = el.offsetWidth || 40;
-  el.style.left = Math.random() * (window.innerWidth - w) + 'px';
-  const translateZ = -Math.random() * 300;
-  const startY = -50, endY = window.innerHeight + 50;
-  const duration = 8000 + Math.random() * 4000;
+
+  const w = el.offsetWidth || 48;
+  el.style.left = (Math.random() * (window.innerWidth + w) - w/2) + 'px';
+
+  const translateZ = - (80 + Math.random() * (isMobile ? 300 : 800));
+  const startY = -60, endY = window.innerHeight + 60;
+  const duration = 7000 + Math.random() * 6000;
   const t0 = performance.now();
+
   function anim(t) {
     const dt = t - t0;
     if (dt < duration) {
       const p = dt / duration;
-      el.style.transform = `translateY(${startY + p * (endY - startY)}px) translateZ(${translateZ}px)`;
-      el.style.opacity = p < 0.1 ? p * 10 : (p > 0.9 ? (1 - p) * 10 : 1);
+      el.style.transform = `translateY(${startY + p*(endY-startY)}px) translateZ(${translateZ}px)`;
+      el.style.opacity = p < 0.08 ? p*12 : (p > 0.92 ? (1-p)*12 : 1);
       requestAnimationFrame(anim);
     } else {
       el.remove();
@@ -143,72 +167,142 @@ function createImageParticle() {
   requestAnimationFrame(anim);
 }
 
-// 3D sao
+/* three.js stars */
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.z = 150;
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
+let zoom = 150;
+camera.position.z = zoom;
+
 const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0x000000, 0);
 galaxy.appendChild(renderer.domElement);
 
-const starsCount = 500;
+const starsCount = 700;
 const geometry = new THREE.BufferGeometry();
-const positions = new Float32Array(starsCount * 3);
-for (let i = 0; i < starsCount; i++) {
-  positions[i * 3] = (Math.random() - 0.5) * 400;
-  positions[i * 3 + 1] = (Math.random() - 0.5) * 400;
-  positions[i * 3 + 2] = (Math.random() - 0.5) * 400;
+const positions = new Float32Array(starsCount*3);
+for (let i=0;i<starsCount;i++){
+  positions[i*3] = (Math.random()-0.5)*900;
+  positions[i*3+1] = (Math.random()-0.5)*900;
+  positions[i*3+2] = (Math.random()-0.5)*900;
 }
 geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-const textureLoader = new THREE.TextureLoader();
-const starTexture = textureLoader.load('https://threejs.org/examples/textures/sprites/disc.png');
-const material = new THREE.PointsMaterial({
-  color: 0xffffff,
-  size: 0.5,
-  map: starTexture,
-  transparent: true,
-  alphaTest: 0.2,
-  depthWrite: false
-});
+const starTexture = new THREE.TextureLoader().load('https://threejs.org/examples/textures/sprites/disc.png');
+const material = new THREE.PointsMaterial({ color:0xffffff, size:0.6, map: starTexture, transparent:true, alphaTest:0.2, depthWrite:false });
 const stars = new THREE.Points(geometry, material);
 scene.add(stars);
 
-function animateStars() {
+function animateStars(){
   requestAnimationFrame(animateStars);
   renderer.render(scene, camera);
 }
 animateStars();
 
-// Nhạc
+/* audio on first click */
 let audioStarted = false;
+let audioEl = null;
 document.body.addEventListener('click', () => {
   if (audioStarted) return;
-  const audio = new Audio('./Phép Màuv2.mp3');
-  audio.loop = true;
-  audio.play().catch(() => {
-    console.log("Không thể phát nhạc tự động.");
-  });
+  audioEl = new Audio('./Phép Màuv2.mp3');
+  audioEl.loop = true;
+  audioEl.play().catch(()=>{ console.log('Không thể phát nhạc tự động.'); });
   audioStarted = true;
 });
 
-// Hiệu ứng xoay chuột
+let targetX = 0, targetY = 0;
+let currentX = 0, currentY = 0;
+
+/* sensitivities */
+function desktopSens() { return 50; } 
+function mobileSens()  { return 30; } 
+function smoothingFactor() { return isMobile ? 0.12 : 0.18; }
+const wheelZoomFactor = 0.14;
+const pinchZoomFactor = 0.2;
+
+/* mouse move */
 document.addEventListener('mousemove', (e) => {
-  const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
-  const rotY = ((e.clientX - cx) / cx) * 10;
-  const rotX = (-(e.clientY - cy) / cy) * 10;
-  rotatingContainer.style.transform = `translate(-50%, -50%) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+  const cx = window.innerWidth/2, cy = window.innerHeight/2;
+  const sens = isMobile ? mobileSens() : desktopSens();
+  targetY = ((e.clientX - cx)/cx) * sens;
+  targetX = (-(e.clientY - cy)/cy) * sens;
 });
 
-// Resize
+/* touch gestures */
+let lastTouchDist = null;
+let touchStartX = 0, touchStartY = 0;
+document.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 1) {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  } else if (e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    lastTouchDist = Math.sqrt(dx*dx + dy*dy);
+  }
+}, { passive: true });
+
+document.addEventListener('touchmove', (e) => {
+  if (e.touches.length === 1) {
+    const dx = e.touches[0].clientX - touchStartX;
+    const dy = e.touches[0].clientY - touchStartY;
+    const factor = isMobile ? 0.08 : 0.04;
+    targetY += dx * factor;
+    targetX += -dy * factor;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  } else if (e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (lastTouchDist != null) {
+      zoom += (lastTouchDist - dist) * pinchZoomFactor;
+      zoom = Math.max(50, Math.min(1200, zoom));
+      camera.position.z = zoom;
+    }
+    lastTouchDist = dist;
+  }
+}, { passive: true });
+
+document.addEventListener('touchend', (e) => {
+  if (e.touches.length < 2) lastTouchDist = null;
+}, { passive: true });
+
+document.addEventListener('wheel', (e) => {
+  zoom += e.deltaY * wheelZoomFactor;
+  zoom = Math.max(50, Math.min(1200, zoom));
+  camera.position.z = zoom;
+}, { passive: true });
+
+function smoothRotate(){
+  const s = smoothingFactor();
+  currentX += (targetX - currentX) * s;
+  currentY += (targetY - currentY) * s;
+
+  currentX = Math.max(-60, Math.min(60, currentX));
+  currentY = Math.max(-90, Math.min(90, currentY));
+  const scale = Math.max(0.3, Math.min(3, zoom / 150));
+  rotatingContainer.style.transform = `translate(-50%,-50%) rotateX(${currentX}deg) rotateY(${currentY}deg) scale(${scale})`;
+  requestAnimationFrame(smoothRotate);
+}
+smoothRotate();
+
+/* resize handling */
 window.addEventListener('resize', () => {
+  const prevMobile = isMobile;
+  isMobile = window.innerWidth < 768;
+  if (isMobile !== prevMobile) {
+    baseMax = isMobile ? 120 : 250;
+    spawnPerTick = isMobile ? 3 : 8;
+  }
+  maxParticles = computeMaxParticles();
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  checkOrientation();
 });
 
-// --- Phát hiện xoay màn hình ---
-function checkOrientation() {
+/* orientation notice */
+function checkOrientation(){
   if (window.innerWidth < window.innerHeight) {
     notice.style.display = "flex";
     galaxy.style.display = "none";
@@ -220,18 +314,19 @@ function checkOrientation() {
   }
 }
 checkOrientation();
-window.addEventListener('resize', checkOrientation);
 
+/* spawn loop (controlled) */
 window.addEventListener('DOMContentLoaded', () => {
   setInterval(() => {
-    for (let i = 0; i < 4; i++) {
-      createTextParticle();
-      if (Math.random() < 0.5) createImageParticle();
+    maxParticles = computeMaxParticles();
+    const available = Math.max(0, maxParticles - activeParticles.size);
+    const createCount = Math.min(spawnPerTick, available);
+    for (let i=0;i<createCount;i++){
+      if (Math.random() < 0.75) createTextParticle();
+      else createImageParticle();
     }
   }, 300);
 });
 </script>
 </body>
 </html>
-
-
